@@ -1,0 +1,9 @@
+{
+  "name": "realtime-data",
+  "version": "0.0.1",
+  "description": "Real time data is project to show orders ocorred on map",
+  "dependencies": {
+    "express": "^4.15.2",
+    "socket.io": "^2.0.4"
+  }
+}
