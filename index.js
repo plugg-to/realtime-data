@@ -8,7 +8,7 @@ var MongoClient = require('mongodb').MongoClient,
 
 var lastId = false;
 var interval = setInterval(function() {
-  MongoClient.connect('mongodb://user:pass@ds011715.mlab.com:11715/tosky', function(err, db) {
+  MongoClient.connect('mongodb://user:pass@host:port/db', function(err, db) {
     collection = db.collection('coupons');
     var cursor = collection.find().limit(1).sort({ $natural : -1 });
 
