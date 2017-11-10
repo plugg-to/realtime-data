@@ -3,7 +3,6 @@ var http = require('http').Server(app);
 var io = require('socket.io')(http);
 
 var MongoClient = require('mongodb').MongoClient,
-    collection = null,
     test = require('assert');
 
 var lastId = false;
@@ -13,12 +12,8 @@ var interval = setInterval(function() {
     var cursor = collection.find().limit(1).sort({ $natural : -1 });
 
     cursor.toArray(function(err, results) {
-      if (err) throw err;
-      console.log(lastId);
-      console.log(results[0]['_id']);
-      // io.emit('order notification', 'teste 123');
-      if (lastId !== results[0]['_id']) {
-        console.log('fa');
+      if (String(lastId) !== String(results[0]['_id'])) {
+        io.emit('order notification', results[0]['_id']);
 
         lastId = results[0]['_id'];
       }
