@@ -7,10 +7,12 @@ var lastId = false;
 var products = null;
 var orders = null;
 var order = false;
+var keyMaps = '';
+var constMongoDB = '';
 
 async function orderCallBack(err, orderResult) {
 	let address = orderResult[0]['receiver_zipcode'] + ',' + orderResult[0]['receiver_country'];
-	let maps = 'https://maps.googleapis.com/maps/api/geocode/json?address=' + address + '&key=AIzaSyCGpPbK8_SAfu1_cjadJO0u62_C7_2rVuE';
+	let maps = 'https://maps.googleapis.com/maps/api/geocode/json?address=' + address + '&key=' + keyMaps;
 	
 	request(
 		{
@@ -65,7 +67,7 @@ async function orderCallBack(err, orderResult) {
 };
 
 var interval = setInterval(function() {
-  MongoClient.connect('', function(err, db) {
+  MongoClient.connect(constMongoDB, function(err, db) {
     orders = db.collection('orders');
     products = db.collection('products');
 
