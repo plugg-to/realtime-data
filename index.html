@@ -2,40 +2,158 @@
 <!doctype html>
 <html>
   <head>
-    <title>Socket.IO chat</title>
+    <title>Map Heart Orders - Real Time</title>
+
+    <meta name="viewport" content="initial-scale=1.0">
+
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
     <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font: 13px Helvetica, Arial; }
-      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
-      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
-      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
-      #messages { list-style-type: none; margin: 0; padding: 0; }
-      #messages li { padding: 5px 10px; }
-      #messages li:nth-child(odd) { background: #eee; }
+      /* Always set the map height explicitly to define the size of the div
+       * element that contains the map. */
+      #map {
+        height: 500px;
+      }
+      /* Optional: Makes the sample page fill the window. */
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
     </style>
   </head>
   <body>
-    <ul id="messages"></ul>
-    <form action="">
-      <input id="m" autocomplete="off" /><button>Send</button>
-    </form>
-
-    <script src="/socket.io/socket.io.js"></script>
+    <div class="container-flex" style="margin-top: 25px;">
+      <div class="col-md-12">
+        <div class="panel panel-default">
+          <div class="panel-heading">Total</div>
+          <div class="panel-body">
+            <h1>
+              <b>R$ </b> <span id="total"></span>
+            </h1>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-8">
+        <div class="panel panel-default">
+          <div class="panel-heading">Vendas</div>
+          <div class="panel-body">
+            <div id="map"></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="panel panel-default">
+          <div class="panel-heading">Valor</div>
+          <div class="panel-body">
+            <h2>
+              <b>R$</b> <span id="value"></span>
+            </h2>
+          </div>
+        </div>
+        <div class="panel panel-default">
+          <div class="panel-heading">Canal</div>
+          <div class="panel-body" id="marketplace"></div>
+        </div>
+        <div class="panel panel-default">
+          <div class="panel-heading">Produtos</div>
+          <div class="panel-body">
+            <div class="media">
+              <div class="media-left media-middle">
+                <a href="#" id="image"></a>
+              </div>
+              <div class="media-body" style="padding-top: 25px;">
+                <h4 class="media-heading" id="name-product"></h4>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
     <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <script>
-      $(function () {
-        var socket = io();
-        $('form').submit(function(){
-          socket.emit('order notification', $('#m').val());
-          $('#m').val('');
-          return false;
+      var socket = io();
+      var map;
+      var markers = [];
+
+      function initMap(lat=-23.5549068, lng=-46.6554605, zoom=2) {
+        map = new google.maps.Map(document.getElementById('map'), {
+          zoom: zoom,
+          center: {lat: lat, lng: lng}
         });
-        socket.on('order notification', function(msg){
-          console.log(msg);
-          $('#messages').append($('<li>').text(msg));
-          window.scrollTo(0, document.body.scrollHeight);
+      }
+
+      function loadTotal() {
+        $.ajax({
+          url: '/total',
+          dataType: 'json',
+          method: 'GET',
+          success: function(data) {
+            $('#total').html(data['total']);
+          }
         });
+      }
+
+      setInterval(function(){
+        loadTotal();
+      }, 30000);
+
+      socket.on('order notification', function(order){
+        initMap(order['lat'], order['lng'], 7);
+
+        var marker = new google.maps.Marker({
+          position: {lat: order['lat'], lng: order['lng']},
+          title: "Uma compra foi efetuada aqui!"
+        });
+
+        // To add the marker to the map, call setMap();
+        marker.setMap(null);
+        marker.setMap(map);
+
+        $('#value').html(order['total']);
+        $('#name-product').html(order['items'][0]['name']);
+        $('#image').html(
+          '<img class="media-object" src="' + order['items'][0]['photos'][0]['url'] + '" width="120" height="120">'
+        );
+
+        if (order['channel'] == "LOJASAMERICANAS") {
+          $('#marketplace').html(
+            '<img class="media-object" src="https://plugg.to/wp-content/uploads/2015/09/Americanas.png" width="120" height="120">'
+          );
+        } else if (order['channel'] == "SUBMARINO") {
+          $('#marketplace').html(
+            '<img class="media-object" src="https://plugg.to/wp-content/uploads/2015/09/Submarino.png" width="120" height="120">'
+          );
+        } else if (order['channel'] == "CasasBahia") {
+          $('#marketplace').html(
+            '<img class="media-object" src="https://plugg.to/wp-content/uploads/2015/09/CasasBahia.png" width="120" height="120">'
+          );
+        } else if (order['channel'] == "MercadoLivre") {
+          $('#marketplace').html(
+            '<img class="media-object" src="https://plugg.to/wp-content/uploads/2015/09/MercadoLivre.png" width="120" height="120">'
+          );
+        } else if (order['channel'] == "SHOPTIME") {
+          $('#marketplace').html(
+            '<img class="media-object" src="https://plugg.to/wp-content/uploads/2015/09/ShopTime.png" width="120" height="120">'
+          );
+        } else if (order['channel'] == "Walmart") {
+          $('#marketplace').html(
+            '<img class="media-object" src="https://plugg.to/wp-content/uploads/2015/09/Walmart.png" width="120" height="120">'
+          );
+        } else {
+          $('#marketplace').html(
+            '<img class="media-object" src="https://plugg.to/wp-content/uploads/2015/09/Walmart.png" width="120" height="120">'
+          );
+        }
       });
+    </script>
+    <script src="https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js">
+    </script>
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA5UoMV6SZ-OVdfZ2n82PKC2C-6vCsf3fk&callback=initMap">
     </script>
   </body>
 </html>
